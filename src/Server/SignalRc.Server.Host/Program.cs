@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using SignalRc.Server.Host;
 using SignalRc.Server.Host.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,7 +10,13 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<WeatherForecastService>();
 
+// Add a singleton WebSocket manager
+builder.Services.AddSingleton<WebSocketConnectionManager>();
 var app = builder.Build();
+app.UseWebSockets(new WebSocketOptions
+{
+    KeepAliveInterval = TimeSpan.FromSeconds(30)
+});
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -25,7 +32,19 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+app.Map("/signalrc/stream", async (HttpContext context, WebSocketConnectionManager wsManager) =>
+{
+    if (context.WebSockets.IsWebSocketRequest)
+    {
+        using var socket = await context.WebSockets.AcceptWebSocketAsync();
 
+        await wsManager.HandleConnection(socket);
+    }
+    else
+    {
+        context.Response.StatusCode = 400;
+    }
+});
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 

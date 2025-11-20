@@ -1,4 +1,6 @@
 ﻿@page "/simulate"
+@using System.Net.WebSockets
+@using System.Text
 @using SignalRc.Models
 
 <PageTitle>Simulate</PageTitle>
@@ -6,12 +8,12 @@
 <h1>Simulate</h1>
 
 <h2>Status</h2>
-@if (simulate)
+@if (_simulate)
 {
     <button class="btn btn-primary" @onclick="StopSimulate">Stop simulate</button>
 }
 <p>
-    @foreach (var s in (statusList ?? Enumerable.Empty<string>()).Reverse())
+    @foreach (var s in (_statusList ?? Enumerable.Empty<string>()).Reverse())
     {
         @s<br/>
     }
@@ -22,36 +24,35 @@
 <button class="btn btn-primary" @onclick="StartSimulate">Start simulate</button>
 
 @code {
-    private List<string> statusList = new List<string>();
-    private bool simulate = false;
-   
+    private List<string> _statusList = new List<string>();
+    private bool _simulate = false;
+    private ClientWebSocket _client = new ClientWebSocket();
     @code {
-      
 
         protected override async Task OnInitializedAsync()
         {
-            await Task.Delay(1);
+            await _client.ConnectAsync(new Uri("ws://localhost:5170/signalrc/stream"), CancellationToken.None);
             await InvokeAsync(StateHasChanged);
         }
 
         private void StopSimulate()
         {
-            simulate = false;
+            _simulate = false;
         }
         private async Task StartSimulate()
         {
-            simulate = true;
+            _simulate = true;
             var carId = Guid.NewGuid();
             var i = 0;
-            while (simulate)
+            while (_simulate)
             {
                 i++;
-                if (statusList.Count() == 40)
+                if (_statusList.Count() == 40)
                 {
-                    statusList.Remove(statusList.First());
+                    _statusList.Remove(_statusList.First());
                 }
 
-                var signalrc = new SignalRc.Models.SignalRcModel
+                var signalrc = new SignalRcModel
                 {
                     Self = carId.ToString(),
                     Cars = new Dictionary<string, CarStateModel>()
@@ -61,18 +62,29 @@
                             {
                                 Name = "speed",
                                 Timestamp = DateTime.Now
-
                             }
                         }
                     }
                 };
-                statusList.Add(DateTime.UtcNow.ToString("s")+": Update car "+carId);
+                await SendDataToSocket(signalrc);
+                _statusList.Add(DateTime.UtcNow.ToString("s")+": Update car "+carId);
                 await InvokeAsync(StateHasChanged);
                 await Task.Delay(1000);
             }
            
             
         }
+
+        private async Task SendDataToSocket(SignalRcModel model)
+        {
+
+
+            var json = System.Text.Json.JsonSerializer.Serialize(model);
+            var bytes = Encoding.UTF8.GetBytes(json);
+
+            await _client.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+
     }
 
 }
