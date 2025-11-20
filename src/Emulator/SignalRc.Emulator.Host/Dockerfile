@@ -12,19 +12,19 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Directory.Build.Props", "."]
-COPY ["Server/SignalRc.Server.Host/SignalRc.Server.Host.csproj", "Server/SignalRc.Server.Host/"]
-RUN dotnet restore "./Server/SignalRc.Server.Host/SignalRc.Server.Host.csproj"
+COPY ["Emulator/SignalRc.Emulator.Host/SignalRc.Emulator.Host.csproj", "Emulator/SignalRc.Emulator.Host/"]
+RUN dotnet restore "./Emulator/SignalRc.Emulator.Host/SignalRc.Emulator.Host.csproj"
 COPY . .
-WORKDIR "/src/Server/SignalRc.Server.Host"
-RUN dotnet build "./SignalRc.Server.Host.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/Emulator/SignalRc.Emulator.Host"
+RUN dotnet build "./SignalRc.Emulator.Host.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./SignalRc.Server.Host.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./SignalRc.Emulator.Host.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "SignalRc.Server.Host.dll"]
+ENTRYPOINT ["dotnet", "SignalRc.Emulator.Host.dll"]

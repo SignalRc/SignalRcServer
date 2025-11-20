@@ -1,0 +1,78 @@
+﻿@page "/simulate"
+@using SignalRc.Models
+
+<PageTitle>Simulate</PageTitle>
+
+<h1>Simulate</h1>
+
+<h2>Status</h2>
+@if (simulate)
+{
+    <button class="btn btn-primary" @onclick="StopSimulate">Stop simulate</button>
+}
+<p>
+    @foreach (var s in (statusList ?? Enumerable.Empty<string>()).Reverse())
+    {
+        @s<br/>
+    }
+</p>
+
+
+
+<button class="btn btn-primary" @onclick="StartSimulate">Start simulate</button>
+
+@code {
+    private List<string> statusList = new List<string>();
+    private bool simulate = false;
+   
+    @code {
+      
+
+        protected override async Task OnInitializedAsync()
+        {
+            await Task.Delay(1);
+            await InvokeAsync(StateHasChanged);
+        }
+
+        private void StopSimulate()
+        {
+            simulate = false;
+        }
+        private async Task StartSimulate()
+        {
+            simulate = true;
+            var carId = Guid.NewGuid();
+            var i = 0;
+            while (simulate)
+            {
+                i++;
+                if (statusList.Count() == 40)
+                {
+                    statusList.Remove(statusList.First());
+                }
+
+                var signalrc = new SignalRc.Models.SignalRcModel
+                {
+                    Self = carId.ToString(),
+                    Cars = new Dictionary<string, CarStateModel>()
+                    {
+                        {
+                            "speed", new CarStateModel
+                            {
+                                Name = "speed",
+                                Timestamp = DateTime.Now
+
+                            }
+                        }
+                    }
+                };
+                statusList.Add(DateTime.UtcNow.ToString("s")+": Update car "+carId);
+                await InvokeAsync(StateHasChanged);
+                await Task.Delay(1000);
+            }
+           
+            
+        }
+    }
+
+}

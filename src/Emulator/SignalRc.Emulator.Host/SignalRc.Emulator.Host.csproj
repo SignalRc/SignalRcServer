@@ -4,13 +4,14 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>16a5393a-bb47-4805-b6bd-d8bea14787c9</UserSecretsId>
+    <UserSecretsId>70ebab0f-7e83-4c00-aa9b-3c46a59483af</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>..\..</DockerfileContext>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
+    <PackageReference Include="SignalRc" Version="1.0.1-beta" />
   </ItemGroup>
 
 </Project>
