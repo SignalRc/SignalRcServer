@@ -1,17 +1,18 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using SignalRc.Server.Host;
-using SignalRc.Server.Host.Data;
 
 var builder = WebApplication.CreateBuilder(args);
+var computername = Environment.MachineName;
+var b = new ConfigurationBuilder()
+    .SetBasePath(builder.Environment.ContentRootPath)
+    .AddJsonFile("appsettings.json", false, true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.{computername}.json", true)
+    .AddEnvironmentVariables();
+var configuration = b.Build();
+builder.Services.AddServer(configuration);
 
-// Add services to the container.
-builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
-builder.Services.AddSingleton<WeatherForecastService>();
-
-// Add a singleton WebSocket manager
-builder.Services.AddSingleton<WebSocketConnectionManager>();
 var app = builder.Build();
 app.UseWebSockets(new WebSocketOptions
 {

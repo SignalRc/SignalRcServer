@@ -31,7 +31,7 @@
 
         protected override async Task OnInitializedAsync()
         {
-            await _client.ConnectAsync(new Uri("ws://localhost:5170/signalrc/stream"), CancellationToken.None);
+            await _client.ConnectAsync(new Uri("wss://localhost:7188/signalrc/stream"), CancellationToken.None);
             await InvokeAsync(StateHasChanged);
         }
 
@@ -43,6 +43,7 @@
         {
             _simulate = true;
             var carId = Guid.NewGuid();
+            var carId2 = Guid.NewGuid();
             var i = 0;
             while (_simulate)
             {
@@ -50,24 +51,74 @@
                 if (_statusList.Count() == 40)
                 {
                     _statusList.Remove(_statusList.First());
+                    _statusList.Remove(_statusList.First());
                 }
 
+                var rnd = new Random();
                 var signalrc = new SignalRcModel
                 {
+                    Version = "1.0.0",
+                    Type = "full",
                     Self = carId.ToString(),
-                    Cars = new Dictionary<string, CarStateModel>()
+                    Vehicles = new Dictionary<string, VehicleStateModel>()
                     {
                         {
-                            "speed", new CarStateModel
+                            carId.ToString(), new VehicleStateModel
                             {
-                                Name = "speed",
-                                Timestamp = DateTime.Now
+                                Name = "Car 1",
+                                Data = new DataModel
+                                {
+                                    Speed = new MetricWithUnitModel
+                                    {
+                                        Value = rnd.Next(10,84),
+                                        Unit = "kmh"
+                                        
+                                    }
+                                },
+                                Position = new PositionModel
+                                {
+                                    X = rnd.Next(1,40),
+                                    Y=rnd.Next(1,40),
+                                    Z=rnd.Next(1,10),
+                                }
+                            }
+                        }
+                    }
+                };
+                var signalrc2 = new SignalRcModel
+                {
+                    Version = "1.0.0",
+                    Type = "full",
+                    Self = carId2.ToString(),
+                    Vehicles = new Dictionary<string, VehicleStateModel>()
+                    {
+                        {
+                            carId2.ToString(), new VehicleStateModel
+                            {
+                                Name = "Car 2",
+                                Data = new DataModel
+                                {
+                                    Speed = new MetricWithUnitModel
+                                    {
+                                        Value = rnd.Next(10,84),
+                                        Unit = "kmh"
+                                        
+                                    }
+                                },
+                                Position = new PositionModel
+                                {
+                                    X = rnd.Next(1,40),
+                                    Y=rnd.Next(1,40),
+                                    Z=rnd.Next(1,10),
+                                }
                             }
                         }
                     }
                 };
                 await SendDataToSocket(signalrc);
+                await SendDataToSocket(signalrc2);
                 _statusList.Add(DateTime.UtcNow.ToString("s")+": Update car "+carId);
+                _statusList.Add(DateTime.UtcNow.ToString("s")+": Update car "+carId2);
                 await InvokeAsync(StateHasChanged);
                 await Task.Delay(1000);
             }

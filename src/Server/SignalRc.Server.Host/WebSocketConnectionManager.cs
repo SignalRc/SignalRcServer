@@ -1,10 +1,19 @@
 using System.Net.WebSockets;
 using System.Text;
+using SignalRc.Server.Host.Feature;
 
 namespace SignalRc.Server.Host;
 public class WebSocketConnectionManager
 {
     private readonly List<WebSocket> _sockets = new();
+    private readonly IMessageHandler _messageHandler;
+    private readonly ILogger<WebSocketConnectionManager> _logger;
+
+    public WebSocketConnectionManager(IMessageHandler messageHandler, ILogger<WebSocketConnectionManager> logger)
+    {
+        _messageHandler = messageHandler;
+        _logger = logger;
+    }
 
     public async Task HandleConnection(WebSocket socket)
     {
@@ -22,8 +31,14 @@ public class WebSocketConnectionManager
             }
 
             var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-
-            Console.WriteLine($"Got message: {message}");
+            try
+            {
+                await _messageHandler.Handle(message);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString(), e);
+            }
 
             // Broadcast to all clients
             await BroadcastAsync(message);
